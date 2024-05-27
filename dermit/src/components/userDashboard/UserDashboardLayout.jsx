@@ -2,9 +2,9 @@ import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useFormik } from "formik";
 import { useNavigate } from "react-router-dom";
-import { AuthContext } from "../contexts/AuthContext";
+import { AuthContext } from "../../contexts/AuthContext";
 
-export default function Conversations() {
+export default function UserDashboardLayout() {
   const { user, authAxios } = useContext(AuthContext);
   const [error, setError] = useState(null);
   const [convers, setConvers] = useState([]);
@@ -14,7 +14,7 @@ export default function Conversations() {
       const res = await fetch("http://127.0.0.1:8000/api/conversations/", {
         headers: {
           Authorization: `Token ${user?.token}`,
-        },
+        },  
       });
       const data = await res.json();
       setConvers(data);
