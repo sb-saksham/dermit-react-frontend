@@ -14,14 +14,14 @@ export function Message({ message }) {
       className={classNames(
         "mt-1 mb-1 flex",
         message.is_response
-          ? "justify-end"
-          : "justify-start"
+          ? "justify-start"
+          : "justify-end"
       )}
     >
       <div
         className={classNames(
-          "relative max-w-xl rounded-lg px-2 py-1 text-gray-700 shadow",
-          message.is_response ? "bg-gray-100" : ""
+          "relative max-w-xl rounded-lg px-2 py-1  shadow",
+          message.is_response ? "bg-primaryBlue text-white" : "bg-gray-200"
         )}
       >
         <div className="flex items-end">

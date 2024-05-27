@@ -8,7 +8,7 @@ export default function Dashboard() {
   const { user, logout } = useContext(AuthContext);
 
   return (
-    <div className="container w-full mx-auto">
+    <div className="container">
       <nav className="bg-white border-gray-200 px-4 sm:px-6 py-2.5 rounded dark:bg-gray-800">
         <div className="max-w-5xl mx-auto flex flex-wrap justify-between items-center">
           <Link to="/" className="flex items-center">
@@ -83,7 +83,7 @@ export default function Dashboard() {
         </div>
       </nav>
       <ToastContainer />
-      <div className="container w-full px-10 flex item-center">
+      <div className="">
         <Outlet />
       </div>
     </div>
