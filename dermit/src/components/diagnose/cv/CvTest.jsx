@@ -3,7 +3,10 @@ import { useContext } from "react";
 import { AIModelContext } from "../../../contexts/AIModelContext";
 import { useNavigate } from "react-router-dom";
 import { IoImages } from "react-icons/io5";
+import { GrUploadOption } from "react-icons/gr";
+import { MdOutlineCancel } from "react-icons/md";
 import { ToastContainer, toast } from "react-toastify";
+import { Button } from "@nextui-org/react";
 
 const CvTest = () => {
   const imageHandler = useRef(null);
@@ -21,33 +24,41 @@ const CvTest = () => {
   const drop = () => {
     imageHandler.current.classList.remove("dragClass");
   };
-
+  const clearQueue = () => {
+    filesList.forEach((image) => {
+      console.log("image.name: ", image.file.name);
+      URL.revokeObjectURL(image.preview);
+    });
+    setFilesList([]);
+    toast.warn("Image Queue Cleared", {
+      autoClose: 3000,
+      position: "top-center",
+    });
+  };
   const onFileDrop = (e) => {
     // e.target.files returns FileList object which doesn't have all the property of an array
     const files = [...e.target.files]; // spread operator (...) converts this FileList to an actual array object
     // Now filter each files for supported image format
     // If right format then append the to fileList state based on its previous value
-    if (
-      // TODO: Write a condition to check duplicates
-      files.filter((element) => {
-        console.log(element);
-        return (
-          (element.type === "image/png" ||
-            element.type === "image/jpeg" ||
-            element.type === "image/jpg") &&
-          element.size > 0
-        );
-      }).length > 0
-    ) {
-      const acceptedFiles = files.filter((element) => {
-        return (
-          element.type === "image/png" ||
-          element.type === "image/jpeg" ||
-          element.type === "image/jpg"
-        );
+
+    const acceptedFiles = files.filter((element) => {
+      return (
+        element.type === "image/png" ||
+        element.type === "image/jpeg" ||
+        element.type === "image/jpg"
+      );
+    });
+
+    if (acceptedFiles.length > 0) {
+      const filesWithPreview = acceptedFiles.map((file) => {
+        console.log("file: ", file);
+        return {
+          file,
+          preview: URL.createObjectURL(file),
+        };
       });
-      console.log("acceptedFiles: ", acceptedFiles);
-      setFilesList((prevList) => [...prevList, ...files]);
+      console.log("acceptedFiles: ", filesWithPreview);
+      setFilesList((prevList) => [...prevList, ...filesWithPreview]);
     } else {
       toast.error(`Please upload image(s) in supported formats`, {
         autoClose: 3000,
@@ -66,7 +77,6 @@ const CvTest = () => {
       });
     }
   }, [filesList]);
-
 
   // TODO: Add image previewing feature and deleting feature, learn about URL.createObjectURL -> caveat
 
@@ -108,23 +118,47 @@ const CvTest = () => {
               className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
             />
           </div>
+          <div className="space-x-4">
+            <Button
+              color={filesList.length > 0 ? "primary" : "default"}
+              className="transition-all"
+              isDisabled={filesList.length > 0 ? false : true}
+            >
+              <GrUploadOption size={18} /> Upload
+            </Button>
+            <Button
+              color={filesList.length > 0 ? "danger" : "default"}
+              className="transition-all"
+              isDisabled={filesList.length > 0 ? false : true}
+              onClick={clearQueue}
+            >
+              <MdOutlineCancel size={20} />
+              Clear Queue
+            </Button>
+          </div>
         </div>
         {filesList.length > 0 && (
           <div className="p-[30px] rounded-lg shadow-md bg-white h-max grid grid-cols-3 gap-4 w-[25vw]">
-            {filesList.map((image) => {
+            {filesList.map((image, index) => {
               return (
-                <>
-                  <div className="bg-primaryGreen h-32 relative w-full text-center font-semibold flex flex-col">
-                    <img
-                      src={URL.createObjectURL(image)}
-                      alt="image container"
-                      className="object-cover absolute h-full"
-                    />
+                <div
+                  key={index}
+                  className="bg-primaryGreen h-32 relative w-full text-center font-semibold flex flex-col"
+                >
+                  <img
+                    src={image.preview}
+                    alt="image container"
+                    className="object-cover absolute h-full"
+                  />
+                  <div className="flex h-full flex-col justify-between">
                     <p className="h-max z-40 relative bg-primaryGreen text-white">
-                      {image.name}
+                      {image.file.name}
+                    </p>
+                    <p className="h-max z-40 relative bg-primaryGreen text-white">
+                      {Math.floor(image.file.size / 1024)} KB
                     </p>
                   </div>
-                </>
+                </div>
               );
             })}
           </div>
