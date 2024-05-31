@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useContext } from "react";
 import { AIModelContext } from "../../../contexts/AIModelContext";
+import { AuthContext } from "../../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { IoImages } from "react-icons/io5";
 import { GrUploadOption } from "react-icons/gr";
@@ -9,8 +10,10 @@ import { ToastContainer, toast } from "react-toastify";
 import { Button } from "@nextui-org/react";
 
 const CvTest = () => {
+  const { user, authAxios } = useContext(AuthContext);
   const imageHandler = useRef(null);
   const [filesList, setFilesList] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
   const navigate = useNavigate();
   const { formValues, setFormValues } = useContext(AIModelContext);
   // console.log(formValues);
@@ -78,7 +81,45 @@ const CvTest = () => {
     }
   }, [filesList]);
 
-  // TODO: Add image previewing feature and deleting feature, learn about URL.createObjectURL -> caveat
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setIsUploading(true);
+    const formData = new FormData();
+
+    filesList.forEach((image) => {
+      formData.append("image", image.file);
+    });
+
+    formData.entries().forEach((e) => console.log(e));
+
+    try {
+      const response = await authAxios.post("images/upload/", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (response.status !== 201) {
+        throw new Error(response.data || "Upload failed");
+      }
+      console.log(response.data);
+      toast.success(`${response.data}`, {
+        autoClose: 3000,
+        position: "top-center",
+        newestOnTop: true,
+      });
+    } catch (error) {
+      console.error("Error uploading image:", error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // TODO: Add image previewing feature
+  // TODO: Add individual image deleting from the queue feature
+  // TODO: Remove duplicate images
+  // TODO: Disable button during submission to avoid multiple submission
+
 
   return (
     <>
@@ -123,8 +164,9 @@ const CvTest = () => {
               color={filesList.length > 0 ? "primary" : "default"}
               className="transition-all"
               isDisabled={filesList.length > 0 ? false : true}
+              onClick={handleSubmit}
             >
-              <GrUploadOption size={18} /> Upload
+              <GrUploadOption size={18} /> Upload & Next
             </Button>
             <Button
               color={filesList.length > 0 ? "danger" : "default"}
