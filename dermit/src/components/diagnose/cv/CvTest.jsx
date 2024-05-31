@@ -7,7 +7,20 @@ import { IoImages } from "react-icons/io5";
 import { GrUploadOption } from "react-icons/gr";
 import { MdOutlineCancel } from "react-icons/md";
 import { ToastContainer, toast } from "react-toastify";
-import { Button } from "@nextui-org/react";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  useDisclosure,
+} from "@nextui-org/react";
+import { truncate } from "lodash";
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Pagination } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/pagination';
 
 const CvTest = () => {
   const { user, authAxios } = useContext(AuthContext);
@@ -16,7 +29,9 @@ const CvTest = () => {
   const [isUploading, setIsUploading] = useState(false);
   const navigate = useNavigate();
   const { formValues, setFormValues } = useContext(AIModelContext);
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
   // console.log(formValues);
+  const [modalValue, setModalValue] = useState({});
 
   const dragEnter = () => {
     imageHandler.current.classList.add("dragClass");
@@ -55,6 +70,7 @@ const CvTest = () => {
     if (acceptedFiles.length > 0) {
       const filesWithPreview = acceptedFiles.map((file) => {
         console.log("file: ", file);
+
         return {
           file,
           preview: URL.createObjectURL(file),
@@ -84,6 +100,7 @@ const CvTest = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsUploading(true);
+    setTimeout(() => {}, 2000);
     const formData = new FormData();
 
     filesList.forEach((image) => {
@@ -96,6 +113,7 @@ const CvTest = () => {
       const response = await authAxios.post("images/upload/", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
+          Authorization: `Token ${user.token}`,
         },
       });
 
@@ -115,11 +133,22 @@ const CvTest = () => {
     }
   };
 
-  // TODO: Add image previewing feature
-  // TODO: Add individual image deleting from the queue feature
-  // TODO: Remove duplicate images
-  // TODO: Disable button during submission to avoid multiple submission
+  const removeImage = (image) => {
+    console.log(`removing ${image.file.name}`);
+    URL.revokeObjectURL(image.preview);
+    const updatedList = filesList.filter((img) => {
+      return img.file.name !== image.file.name;
+    });
+    setFilesList(updatedList);
+  };
 
+  const handleModalValue = (image) => {
+    setModalValue(image);
+  };
+
+  // TODO: Remove duplicate images
+  // TODO: Add Carousel
+  // TODO: Add Identified Symptoms
 
   return (
     <>
@@ -163,7 +192,7 @@ const CvTest = () => {
             <Button
               color={filesList.length > 0 ? "primary" : "default"}
               className="transition-all"
-              isDisabled={filesList.length > 0 ? false : true}
+              isDisabled={filesList.length > 0 && !isUploading ? false : true}
               onClick={handleSubmit}
             >
               <GrUploadOption size={18} /> Upload & Next
@@ -180,29 +209,87 @@ const CvTest = () => {
           </div>
         </div>
         {filesList.length > 0 && (
-          <div className="p-[30px] rounded-lg shadow-md bg-white h-max grid grid-cols-3 gap-4 w-[25vw]">
-            {filesList.map((image, index) => {
-              return (
-                <div
-                  key={index}
-                  className="bg-primaryGreen h-32 relative w-full text-center font-semibold flex flex-col"
-                >
-                  <img
-                    src={image.preview}
-                    alt="image container"
-                    className="object-cover absolute h-full"
-                  />
-                  <div className="flex h-full flex-col justify-between">
-                    <p className="h-max z-40 relative bg-primaryGreen text-white">
-                      {image.file.name}
-                    </p>
-                    <p className="h-max z-40 relative bg-primaryGreen text-white">
-                      {Math.floor(image.file.size / 1024)} KB
-                    </p>
+          <div className="p-[30px] rounded-lg shadow-md bg-white gap-[30px] flex flex-col ">
+            <p className="font-semibold text-4xl text-center">
+              Uploaded Images
+            </p>
+            <div className=" h-max grid grid-cols-3 gap-4 w-[35vw]">
+              {filesList.map((image, index) => {
+                return (
+                  <div
+                    key={index}
+                    className="bg-primaryGreen h-52 relative w-full font-semibold flex flex-col rounded-md"
+                  >
+                    <img
+                      src={image.preview}
+                      alt="image container"
+                      className="object-cover absolute h-full w-full z-10 rounded-md"
+                    />
+                    <span className="absolute z-30 top-2 right-2 flex text-white cursor-pointer">
+                      <MdOutlineCancel
+                        size={25}
+                        onClick={() => {
+                          removeImage(image);
+                        }}
+                      />
+                    </span>
+                    <div className="flex h-full flex-col justify-between items-start p-2 bg-black/30 z-20 relative text-white rounded-md">
+                      <div className="">
+                        <p>
+                          {truncate(`${user.username}_${image.file.name}`, {
+                            length: 15,
+                          })}
+                          {image.file.name.slice(-5, image.file.name.length)}
+                        </p>
+                        <p>{Math.floor(image.file.size / 1024)} KB</p>
+                      </div>
+                      <button
+                        className="w-full py-1 bg-white text-black text-center rounded-md"
+                        onClick={() => {
+                          handleModalValue(image);
+                          onOpen();
+                        }}
+                      >
+                        PREVIEW
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+            <Modal
+              isOpen={isOpen}
+              onOpenChange={onOpenChange}
+              className="bg-black text-white"
+              size="2xl"
+              backdrop="blur"
+            >
+              <ModalContent>
+                {(onClose) => (
+                  <>
+                    <ModalHeader className="flex flex-col gap-1">
+                      {`${user.username}_${modalValue.file.name}`}
+                    </ModalHeader>
+                    <ModalBody>
+                      <div className="relative bg-black w-full h-96">
+                        <img
+                          src={modalValue.preview}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                    </ModalBody>
+                    <ModalFooter className="justify-between">
+                      <p className="text-sm text-gray-500">
+                        size: {Math.floor(modalValue.file.size / 1024)} KB
+                      </p>
+                      <Button color="danger" onPress={onClose}>
+                        Close
+                      </Button>
+                    </ModalFooter>
+                  </>
+                )}
+              </ModalContent>
+            </Modal>
           </div>
         )}
       </section>
