@@ -18,12 +18,11 @@ import {
   useDisclosure,
 } from "@nextui-org/react";
 import { truncate } from "lodash";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation } from "swiper/modules";
-import "swiper/css";
-
+import UploadImage from "./UploadImage";
+import DetectedSymptoms from "./DetectedSymptoms";
 
 const CvTest = () => {
+  const symptomsURL = "http://localhost:8000/static/chat/images/output";
   const { user, authAxios } = useContext(AuthContext);
   const imageHandler = useRef(null);
   const [filesList, setFilesList] = useState([]);
@@ -31,8 +30,8 @@ const CvTest = () => {
   const navigate = useNavigate();
   const { formValues, setFormValues } = useContext(AIModelContext);
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
-  // console.log(formValues);
-  const [modalValue, setModalValue] = useState({});
+  const [resp, setResp] = useState([]);
+
 
   const dragEnter = () => {
     imageHandler.current.classList.add("dragClass");
@@ -99,6 +98,7 @@ const CvTest = () => {
   }, [filesList]);
 
   const handleSubmit = async (event) => {
+    setResp([]);
     event.preventDefault();
     setIsUploading(true);
     setTimeout(() => {}, 2000);
@@ -121,7 +121,8 @@ const CvTest = () => {
       if (response.status !== 201) {
         throw new Error(response.data || "Upload failed");
       }
-      console.log(response.data);
+      console.log(response);
+      setResp(response.data);
       toast.success(`${response.data}`, {
         autoClose: 3000,
         position: "top-center",
@@ -148,7 +149,6 @@ const CvTest = () => {
   };
 
   // TODO: Remove duplicate images
-  // TODO: Add Carousel
   // TODO: Add Identified Symptoms
 
   return (
@@ -210,110 +210,11 @@ const CvTest = () => {
           </div>
         </div>
 
-        <div className="p-[30px] rounded-lg shadow-md bg-white gap-[30px] flex flex-col w-[38vw] min-h-[413px]">
-          <p className="font-semibold text-4xl text-center">Uploaded Images</p>
-          <div className="flex w-full text-primaryGreen justify-between items-center">
-            <IoIosArrowDropleft size={45} className={`prev cursor-pointer`} />
-            <IoIosArrowDropright size={45} className={`next cursor-pointer`} />
-          </div>
-          {filesList.length > 0 && (
-            <>
-              <Swiper
-                slidesPerView={3.2}
-                spaceBetween={20}
-                grabCursor={true}
-                navigation={{
-                  nextEl: ".next",
-                  prevEl: ".prev",
-                }}
-                modules={[Navigation]}
-                className="w-full"
-              >
-                {filesList.map((image, index) => {
-                  return (
-                    <SwiperSlide>
-                      <div
-                        key={index}
-                        className="bg-primaryGreen h-52 relative w-full font-semibold flex flex-col rounded-md"
-                      >
-                        <img
-                          src={image.preview}
-                          alt="image container"
-                          className="object-cover absolute h-full w-full z-10 rounded-md"
-                        />
-                        <span className="absolute z-30 top-2 right-2 flex text-white cursor-pointer">
-                          <MdOutlineCancel
-                            size={25}
-                            onClick={() => {
-                              removeImage(image);
-                            }}
-                          />
-                        </span>
-                        <div className="flex h-full flex-col justify-between items-start p-2 bg-black/30 z-20 relative text-white rounded-md">
-                          <div className="">
-                            <p>
-                              {truncate(`${user.username}_${image.file.name}`, {
-                                length: 15,
-                              })}
-                              {image.file.name.slice(
-                                -5,
-                                image.file.name.length
-                              )}
-                            </p>
-                            <p>{Math.floor(image.file.size / 1024)} KB</p>
-                          </div>
-                          <button
-                            className="w-full py-1 bg-white text-black text-center rounded-md"
-                            onClick={() => {
-                              handleModalValue(image);
-                              onOpen();
-                            }}
-                          >
-                            PREVIEW
-                          </button>
-                        </div>
-                      </div>
-                    </SwiperSlide>
-                  );
-                })}
-              </Swiper>
 
-              <Modal
-                isOpen={isOpen}
-                onOpenChange={onOpenChange}
-                className="bg-black text-white"
-                size="2xl"
-                backdrop="blur"
-              >
-                <ModalContent>
-                  {(onClose) => (
-                    <>
-                      <ModalHeader className="flex flex-col gap-1">
-                        {`${user.username}_${modalValue.file.name}`}
-                      </ModalHeader>
-                      <ModalBody>
-                        <div className="relative bg-black w-full h-96">
-                          <img
-                            src={modalValue.preview}
-                            className="w-full h-full object-contain"
-                          />
-                        </div>
-                      </ModalBody>
-                      <ModalFooter className="justify-between">
-                        <p className="text-sm text-gray-500">
-                          size: {Math.floor(modalValue.file.size / 1024)} KB
-                        </p>
-                        <Button color="danger" onPress={onClose}>
-                          Close
-                        </Button>
-                      </ModalFooter>
-                    </>
-                  )}
-                </ModalContent>
-              </Modal>
-            </>
-          )}
-        </div>
+        <UploadImage filesList={filesList} user={user} removeImage={removeImage}/>
+        <DetectedSymptoms resp={resp}/>
+
+
       </section>
     </>
   );
