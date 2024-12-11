@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useHotkeys } from "react-hotkeys-hook";
+import { FaArrowUp } from "react-icons/fa6";
 
 import { AuthContext } from "../contexts/AuthContext";
 import { Message } from "./Message";
@@ -61,24 +62,24 @@ export default function Chat() {
   }, [connectionStatus, sendJsonMessage]);
   async function fetchMessages() {
     const apiRes = await fetch(
-        `http://127.0.0.1:8000/api/messages/?conversation=${conversationId}&page=${page}`,
-        {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            Authorization: `Token ${user.token}`,
-          },
-        }
-      );
-      if (apiRes.status === 200) {
-        const data = await apiRes.json();
-        setHasMoreMessages(data.next !== null);
-        setPage(page + 1);
-        setMessageHistory((prev) => prev.concat(data.results));
+      `http://127.0.0.1:8000/api/messages/?conversation=${conversationId}&page=${page}`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Token ${user.token}`,
+        },
       }
+    );
+    if (apiRes.status === 200) {
+      const data = await apiRes.json();
+      setHasMoreMessages(data.next !== null);
+      setPage(page + 1);
+      setMessageHistory((prev) => prev.concat(data.results));
     }
-  
+  }
+
   useEffect(() => {
     async function fetchConversation() {
       const apiRes = await fetch(
@@ -94,6 +95,7 @@ export default function Chat() {
       );
       if (apiRes.status === 200) {
         const data = await apiRes.json();
+        console.log(data)
         setConversation(data);
       }
     }
@@ -115,59 +117,57 @@ export default function Chat() {
     setMessage("");
   };
 
-  // useEffect(() => {
-  //   (inputReference.current).focus();
-  // }, [inputReference]);
 
 
   return (
-    <div className="w-full">
-      <span>The WebSocket is currently {connectionStatus}</span>
-      {conversation && (
-        <div className="py-6">
-          <h3 className="text-3xl font-semibold text-gray-900">
-            Chat: "{conversation.name}"
-          </h3>
-        </div>
-      )}
+    <div className="w-dvw h-screen border border-red-400 grid grid-cols-6">
+      <div className="flex col-span-1 bg-purple-400 h-screen"></div>
+      <div className="flex col-span-5 h-screen justify-center">
+        <div
+          id="scrollableDiv"
+          className={
+            "h-[90vh] w-[60%] mt-3 flex flex-col relative border border-gray-200 overflow-y-auto p-6"
+          }
+        >
+          <div className="sticky top-0 flex bg-white items-center gap-4 my-4 z-10">
+            {conversation && (
+              <p className="font-bold"> Chat: "{conversation.name}" </p>
+            )}
+            <span>The WebSocket is currently {connectionStatus}</span>
+          </div>
 
-      <div className="flex w-full items-center justify-between border border-gray-200 p-3">
-        <input
-          type="text"
-          placeholder="Message"
-          className="block w-full rounded-full bg-gray-100 py-2 outline-none focus:text-gray-700"
-          name="message"
-          value={message}
-          onChange={handleChangeMessage}
-          required
-          
-          maxLength={511}
-        />
-        <button className="ml-3 bg-gray-300 px-3 py-1" onClick={handleSubmit}>
-          Submit
-        </button>
-      </div>
+          <div>
+            <InfiniteScroll
+              dataLength={messageHistory.length}
+              next={fetchMessages}
+              className="flex flex-col-reverse"
+              inverse={false}
+              hasMore={hasMoreMessages}
+              loader={<ChatLoader />}
+              scrollableTarget="scrollableDiv"
+            >
+              {messageHistory.map((message) => (
+                <Message key={message.id} message={message} />
+              ))}
+            </InfiniteScroll>
+          </div>
 
-      <div
-        id="scrollableDiv"
-        className={
-          "h-[20rem] mt-3 flex flex-col-reverse relative w-full border border-gray-200 overflow-y-auto p-6"
-        }
-      >
-        <div>
-          <InfiniteScroll
-            dataLength={messageHistory.length}
-            next={fetchMessages}
-            className="flex flex-col-reverse"
-            inverse={true}
-            hasMore={hasMoreMessages}
-            loader={<ChatLoader />}
-            scrollableTarget="scrollableDiv"
-          >
-            {messageHistory.map((message) => (
-              <Message key={message.id} message={message} />
-            ))}
-          </InfiniteScroll>
+          <div className="flex w-full items-center sticky bottom-0  bg-white mt-4 justify-between px-[15px]">
+            <textarea
+              placeholder="Ask DermIT..."
+              name="message"
+              value={message}
+              rows={"1"}
+              onChange={handleChangeMessage}
+              className="bg-gray-200 outline-none focus:text-gray-700 w-full  px-8 py-4 max-h-[25dvh] resize-none flex rounded-full"
+            />
+            <button
+              className="ml-3 bg-primaryGreen flex items-center justify-center w-10 h-10 text-white py-1 rounded-xl"
+              onClick={handleSubmit}
+            >
+              <FaArrowUp />
+            </button>
+          </div>
         </div>
       </div>
     </div>
